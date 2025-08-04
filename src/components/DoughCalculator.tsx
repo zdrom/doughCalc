@@ -19,13 +19,6 @@ interface Recipe {
     percentage: number
     hydration: number
   }
-  timing: {
-    autolyse: number // minutes
-    bulkFerment: number // hours
-    ballAndRest: number // minutes
-    finalProof: number // hours
-    roomTemp: number // celsius
-  }
 }
 
 const defaultRecipe: Recipe = {
@@ -46,13 +39,6 @@ const defaultRecipe: Recipe = {
     type: 'poolish',
     percentage: 20,
     hydration: 100,
-  },
-  timing: {
-    autolyse: 30,
-    bulkFerment: 24,
-    ballAndRest: 30,
-    finalProof: 2,
-    roomTemp: 20,
   }
 }
 
@@ -67,7 +53,6 @@ export default function DoughCalculator() {
     settings: false,
     ingredients: false,
     preFerment: false,
-    timing: false,
   })
 
   const toggleCollapse = (section: keyof typeof collapsed) => {
@@ -109,15 +94,6 @@ export default function DoughCalculator() {
     }))
   }
 
-  const updateTiming = (field: keyof Recipe['timing'], value: number) => {
-    setRecipe(prev => ({
-      ...prev,
-      timing: {
-        ...prev.timing,
-        [field]: value
-      }
-    }))
-  }
 
   const updateDoughBalls = (value: number | string) => {
     setRecipe(prev => ({ ...prev, doughBalls: value === '' ? '' : Number(value) }))
@@ -208,9 +184,9 @@ export default function DoughCalculator() {
   return (
     <div className="space-y-6">
       {/* Recipe Results - Top Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div>
         {/* Weight Results */}
-        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-6 shadow-2xl text-white">
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-6 shadow-2xl text-white border border-gray-700/50">
           <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
             <div className="w-2 h-2 bg-green-400 rounded-full"></div>
             Recipe Results
@@ -238,7 +214,7 @@ export default function DoughCalculator() {
                         <span className="text-gray-300 text-sm">Water</span>
                         <div className="flex items-center gap-2">
                           <span className="text-white font-bold">{Math.round(weights.preFerment.water)}g</span>
-                          <span className="text-gray-400 text-xs">({((weights.preFerment.water / ((weights.totalDoughWeight * recipe.ingredients.water) / 100)) * 100).toFixed(0)}%)</span>
+                          <span className="text-gray-400 text-xs">({((weights.preFerment.water / weights.totalFlourWeight) * 100).toFixed(1)}%)</span>
                         </div>
                       </div>
                       <div className="border-t border-purple-600/30 pt-2">
@@ -268,7 +244,7 @@ export default function DoughCalculator() {
                       <span className="text-gray-300 text-sm font-medium">Water</span>
                       <div className="flex items-center gap-2">
                         <span className="text-white text-lg font-bold">{Math.round(weights.finalDough.water)}g</span>
-                        <span className="text-gray-400 text-xs">({((weights.finalDough.water / ((weights.totalDoughWeight * recipe.ingredients.water) / 100)) * 100).toFixed(0)}%)</span>
+                        <span className="text-gray-400 text-xs">({((weights.finalDough.water / weights.totalFlourWeight) * 100).toFixed(1)}%)</span>
                       </div>
                     </div>
                     {Object.entries(weights.finalDough).map(([key, weight]) => {
@@ -306,119 +282,28 @@ export default function DoughCalculator() {
           })()}
         </div>
 
-        {/* Process Timeline */}
-        <div className="bg-gradient-to-br from-yellow-900 to-yellow-800 rounded-3xl p-6 shadow-2xl text-white">
-          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-            <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-            Process Timeline
-          </h2>
-          
-          <div className="space-y-4">
-            {recipe.preFerment.enabled && (
-              <div className="bg-yellow-900/50 rounded-2xl p-4 border border-yellow-600/30">
-                <h3 className="text-sm font-bold text-yellow-300 mb-2 uppercase tracking-wide">
-                  Day Before (Pre-ferment)
-                </h3>
-                <div className="text-sm space-y-1">
-                  <div>• Mix {recipe.preFerment.type} ingredients</div>
-                  <div>• Ferment 12-24 hours at room temp</div>
-                  <div>• Refrigerate until use</div>
-                </div>
-              </div>
-            )}
-            
-            <div className="space-y-3 text-sm">
-              {recipe.timing.autolyse > 0 && (
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-xs font-bold text-black">1</div>
-                  <div className="flex-1">
-                    <div className="font-semibold">Autolyse ({recipe.timing.autolyse} min)</div>
-                    <div className="text-yellow-200 text-xs">Mix flour + water only. Rest covered.</div>
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-xs font-bold text-black">{recipe.timing.autolyse > 0 ? '2' : '1'}</div>
-                <div className="flex-1">
-                  <div className="font-semibold">Mix Final Dough</div>
-                  <div className="text-yellow-200 text-xs">Add salt, yeast, oil, sugar{recipe.preFerment.enabled ? `, ${recipe.preFerment.type}` : ''}. Mix until smooth.</div>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-xs font-bold text-black">{recipe.timing.autolyse > 0 ? '3' : '2'}</div>
-                <div className="flex-1">
-                  <div className="font-semibold">Bulk Ferment ({recipe.timing.bulkFerment}hrs)</div>
-                  <div className="text-yellow-200 text-xs">
-                    {recipe.timing.bulkFerment >= 12 ? 'Cold ferment in fridge' : 'Room temperature ferment'}
-                    {recipe.timing.bulkFerment < 4 && ' with folds every 30 min'}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-xs font-bold text-black">{recipe.timing.autolyse > 0 ? '4' : '3'}</div>
-                <div className="flex-1">
-                  <div className="font-semibold">Ball & Rest ({recipe.timing.ballAndRest} min)</div>
-                  <div className="text-yellow-200 text-xs">Divide into {Number(recipe.doughBalls) || 1} balls. Shape and rest covered.</div>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-xs font-bold text-black">{recipe.timing.autolyse > 0 ? '5' : '4'}</div>
-                <div className="flex-1">
-                  <div className="font-semibold">Final Proof ({recipe.timing.finalProof}hrs)</div>
-                  <div className="text-yellow-200 text-xs">
-                    Room temp until doubled and jiggly
-                    {recipe.timing.finalProof >= 4 && ' (or slow proof in fridge)'}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-xs font-bold text-black">🍕</div>
-                <div className="flex-1">
-                  <div className="font-semibold text-green-300">Ready to Stretch & Bake!</div>
-                  <div className="text-green-200 text-xs">Dough should be soft, airy, and easy to stretch</div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="border-t border-yellow-600 pt-4 mt-6">
-              <div className="text-xs text-yellow-300">
-                Total Time: {(() => {
-                  const totalHours = recipe.timing.bulkFerment + recipe.timing.finalProof + (recipe.timing.autolyse + recipe.timing.ballAndRest) / 60
-                  if (totalHours < 12) return `~${Math.round(totalHours)}hrs (same day)`
-                  if (totalHours < 30) return `~${Math.round(totalHours)}hrs (overnight)`
-                  return `~${Math.round(totalHours)}hrs (long ferment)`
-                })()}
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Input Controls */}
       <div className="space-y-6">
         {/* Recipe Controls */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-6 shadow-2xl text-white border border-gray-700/50">
           <div 
             className="flex items-center justify-between cursor-pointer mb-6"
             onClick={() => toggleCollapse('settings')}
           >
-            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
               Recipe Settings
             </h2>
             <div className="flex items-center gap-3">
               {collapsed.settings && (
-                <div className="text-sm text-gray-600 font-medium">
+                <div className="text-sm text-gray-300 font-medium">
                   {Number(recipe.doughBalls) || 1} balls × {Number(recipe.ballWeight) || 50}g each
                 </div>
               )}
               <div className={`transform transition-transform duration-200 ${collapsed.settings ? 'rotate-180' : ''}`}>
-                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
@@ -427,7 +312,7 @@ export default function DoughCalculator() {
           {!collapsed.settings && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800 tracking-wide">
+              <label className="block text-sm font-semibold text-gray-200 tracking-wide">
                 DOUGH BALLS
               </label>
               <div className="relative">
@@ -436,7 +321,7 @@ export default function DoughCalculator() {
                   min="1"
                   value={recipe.doughBalls}
                   onChange={(e) => updateDoughBalls(e.target.value)}
-                  className="w-full px-4 py-3 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-orange-400 focus:bg-orange-50/50 transition-all text-lg font-semibold text-center"
+                  className="w-full px-4 py-3 bg-gray-800 border-2 border-gray-600 text-white rounded-2xl focus:outline-none focus:border-orange-400 focus:bg-gray-700 transition-all text-lg font-semibold text-center"
                   required
                 />
                 <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
@@ -446,7 +331,7 @@ export default function DoughCalculator() {
             </div>
             
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800 tracking-wide">
+              <label className="block text-sm font-semibold text-gray-200 tracking-wide">
                 BALL WEIGHT
               </label>
               <div className="relative">
@@ -455,7 +340,7 @@ export default function DoughCalculator() {
                   min="50"
                   value={recipe.ballWeight}
                   onChange={(e) => updateBallWeight(e.target.value)}
-                  className="w-full px-4 py-3 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-orange-400 focus:bg-orange-50/50 transition-all text-lg font-semibold text-center"
+                  className="w-full px-4 py-3 bg-gray-800 border-2 border-gray-600 text-white rounded-2xl focus:outline-none focus:border-orange-400 focus:bg-gray-700 transition-all text-lg font-semibold text-center"
                   required
                 />
                 <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
@@ -468,18 +353,18 @@ export default function DoughCalculator() {
         </div>
 
         {/* Ingredients */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-6 shadow-2xl text-white border border-gray-700/50">
           <div 
             className="flex items-center justify-between cursor-pointer mb-6"
             onClick={() => toggleCollapse('ingredients')}
           >
-            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <div className="w-2 h-2 bg-red-400 rounded-full"></div>
               Baker's Percentages
             </h2>
             <div className="flex items-center gap-3">
               {collapsed.ingredients && (
-                <div className="text-sm text-gray-600 font-medium">
+                <div className="text-sm text-gray-300 font-medium">
                   {recipe.ingredients.water}% water, {recipe.ingredients.salt}% salt, {recipe.ingredients.yeast}% yeast
                   {(recipe.ingredients.oil > 0 || recipe.ingredients.sugar > 0) && 
                     `, +${(recipe.ingredients.oil + recipe.ingredients.sugar).toFixed(1)}% extras`
@@ -487,7 +372,7 @@ export default function DoughCalculator() {
                 </div>
               )}
               <div className={`transform transition-transform duration-200 ${collapsed.ingredients ? 'rotate-180' : ''}`}>
-                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
@@ -497,7 +382,7 @@ export default function DoughCalculator() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {ingredientInputs.map(({ key, label, unit, disabled }) => (
               <div key={key} className="space-y-2">
-                <label className="block text-sm font-semibold text-gray-800 tracking-wide">
+                <label className="block text-sm font-semibold text-gray-200 tracking-wide">
                   {label.toUpperCase()}
                 </label>
                 <div className="relative">
@@ -511,7 +396,7 @@ export default function DoughCalculator() {
                     className={`w-full px-4 py-3 pr-12 border-2 rounded-2xl focus:outline-none transition-all text-lg font-semibold text-center ${
                       disabled 
                         ? 'bg-orange-100 border-orange-200 text-orange-800 cursor-not-allowed' 
-                        : 'bg-white border-gray-100 focus:border-red-400 focus:bg-red-50/50'
+                        : 'bg-gray-800 border-2 border-gray-600 text-white focus:border-red-400 focus:bg-gray-700'
                     }`}
                   />
                   <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
@@ -525,14 +410,14 @@ export default function DoughCalculator() {
         </div>
         
         {/* Pre-ferment Controls */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-6 shadow-2xl text-white border border-gray-700/50">
           <div 
             className="flex items-center justify-between cursor-pointer mb-6"
             onClick={() => toggleCollapse('preFerment')}
           >
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-              <h2 className="text-xl font-bold text-gray-900">Pre-ferment (Biga/Poolish)</h2>
+              <h2 className="text-xl font-bold text-white">Pre-ferment (Biga/Poolish)</h2>
               <label className="relative inline-flex items-center cursor-pointer" onClick={(e) => e.stopPropagation()}>
                 <input
                   type="checkbox"
@@ -545,7 +430,7 @@ export default function DoughCalculator() {
             </div>
             <div className="flex items-center gap-3">
               {collapsed.preFerment && (
-                <div className="text-sm text-gray-600 font-medium">
+                <div className="text-sm text-gray-300 font-medium">
                   {recipe.preFerment.enabled ? 
                     `${recipe.preFerment.percentage}% ${recipe.preFerment.type} (${recipe.preFerment.hydration}% hydration)` :
                     'Disabled'
@@ -553,7 +438,7 @@ export default function DoughCalculator() {
                 </div>
               )}
               <div className={`transform transition-transform duration-200 ${collapsed.preFerment ? 'rotate-180' : ''}`}>
-                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
@@ -572,7 +457,7 @@ export default function DoughCalculator() {
                   className={`px-4 py-3 rounded-2xl font-semibold transition-all ${
                     recipe.preFerment.type === 'poolish'
                       ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
                   }`}
                 >
                   Poolish (100% hydration)
@@ -585,7 +470,7 @@ export default function DoughCalculator() {
                   className={`px-4 py-3 rounded-2xl font-semibold transition-all ${
                     recipe.preFerment.type === 'biga'
                       ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
                   }`}
                 >
                   Biga (~50% hydration)
@@ -595,7 +480,7 @@ export default function DoughCalculator() {
               {/* Controls */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-800 tracking-wide">
+                  <label className="block text-sm font-semibold text-gray-200 tracking-wide">
                     PERCENTAGE OF TOTAL DOUGH
                   </label>
                   <div className="relative">
@@ -606,7 +491,7 @@ export default function DoughCalculator() {
                       step="1"
                       value={recipe.preFerment.percentage}
                       onChange={(e) => updatePreferment('percentage', parseFloat(e.target.value) || 0)}
-                      className="w-full px-4 py-3 pr-12 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-purple-400 focus:bg-purple-50/50 transition-all text-lg font-semibold text-center"
+                      className="w-full px-4 py-3 pr-12 bg-gray-800 border-2 border-gray-600 text-white rounded-2xl focus:outline-none focus:border-purple-400 focus:bg-gray-700 transition-all text-lg font-semibold text-center"
                     />
                     <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                       <span className="text-gray-400 text-sm font-medium">%</span>
@@ -615,7 +500,7 @@ export default function DoughCalculator() {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-800 tracking-wide">
+                  <label className="block text-sm font-semibold text-gray-200 tracking-wide">
                     HYDRATION LEVEL
                   </label>
                   <div className="relative">
@@ -626,7 +511,7 @@ export default function DoughCalculator() {
                       step="5"
                       value={recipe.preFerment.hydration}
                       onChange={(e) => updatePreferment('hydration', parseFloat(e.target.value) || 50)}
-                      className="w-full px-4 py-3 pr-12 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-purple-400 focus:bg-purple-50/50 transition-all text-lg font-semibold text-center"
+                      className="w-full px-4 py-3 pr-12 bg-gray-800 border-2 border-gray-600 text-white rounded-2xl focus:outline-none focus:border-purple-400 focus:bg-gray-700 transition-all text-lg font-semibold text-center"
                     />
                     <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                       <span className="text-gray-400 text-sm font-medium">%</span>
@@ -637,181 +522,12 @@ export default function DoughCalculator() {
             </div>
           )}
         </div>
-        
-        {/* Timing & Process Controls */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
-          <div 
-            className="flex items-center justify-between cursor-pointer mb-6"
-            onClick={() => toggleCollapse('timing')}
-          >
-            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-              Timing & Process
-            </h2>
-            <div className="flex items-center gap-3">
-              {collapsed.timing && (
-                <div className="text-sm text-gray-600 font-medium">
-                  {recipe.timing.autolyse > 0 && `${recipe.timing.autolyse}min autolyse, `}
-                  {recipe.timing.bulkFerment}hr bulk, {recipe.timing.finalProof}hr proof
-                </div>
-              )}
-              <div className={`transform transition-transform duration-200 ${collapsed.timing ? 'rotate-180' : ''}`}>
-                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-          </div>
-          
-          {!collapsed.timing && (
-            <div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800 tracking-wide">
-                AUTOLYSE PERIOD
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0"
-                  max="120"
-                  step="5"
-                  value={recipe.timing.autolyse}
-                  onChange={(e) => updateTiming('autolyse', parseFloat(e.target.value) || 0)}
-                  className="w-full px-4 py-3 pr-16 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-yellow-400 focus:bg-yellow-50/50 transition-all text-lg font-semibold text-center"
-                />
-                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                  <span className="text-gray-400 text-sm font-medium">min</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800 tracking-wide">
-                BULK FERMENT
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="1"
-                  max="72"
-                  step="0.5"
-                  value={recipe.timing.bulkFerment}
-                  onChange={(e) => updateTiming('bulkFerment', parseFloat(e.target.value) || 1)}
-                  className="w-full px-4 py-3 pr-16 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-yellow-400 focus:bg-yellow-50/50 transition-all text-lg font-semibold text-center"
-                />
-                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                  <span className="text-gray-400 text-sm font-medium">hrs</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800 tracking-wide">
-                BALL & REST
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="15"
-                  max="180"
-                  step="15"
-                  value={recipe.timing.ballAndRest}
-                  onChange={(e) => updateTiming('ballAndRest', parseFloat(e.target.value) || 15)}
-                  className="w-full px-4 py-3 pr-16 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-yellow-400 focus:bg-yellow-50/50 transition-all text-lg font-semibold text-center"
-                />
-                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                  <span className="text-gray-400 text-sm font-medium">min</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800 tracking-wide">
-                FINAL PROOF
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0.5"
-                  max="8"
-                  step="0.5"
-                  value={recipe.timing.finalProof}
-                  onChange={(e) => updateTiming('finalProof', parseFloat(e.target.value) || 0.5)}
-                  className="w-full px-4 py-3 pr-16 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-yellow-400 focus:bg-yellow-50/50 transition-all text-lg font-semibold text-center"
-                />
-                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                  <span className="text-gray-400 text-sm font-medium">hrs</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800 tracking-wide">
-                ROOM TEMP
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="15"
-                  max="30"
-                  step="1"
-                  value={recipe.timing.roomTemp}
-                  onChange={(e) => updateTiming('roomTemp', parseFloat(e.target.value) || 20)}
-                  className="w-full px-4 py-3 pr-16 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-yellow-400 focus:bg-yellow-50/50 transition-all text-lg font-semibold text-center"
-                />
-                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                  <span className="text-gray-400 text-sm font-medium">°C</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Quick Presets */}
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => {
-                updateTiming('autolyse', 30)
-                updateTiming('bulkFerment', 2)
-                updateTiming('ballAndRest', 30)
-                updateTiming('finalProof', 2)
-              }}
-              className="px-3 py-2 bg-yellow-100 text-yellow-800 rounded-xl hover:bg-yellow-200 transition-all text-sm font-medium"
-            >
-              Same Day (6hrs)
-            </button>
-            <button
-              onClick={() => {
-                updateTiming('autolyse', 30)
-                updateTiming('bulkFerment', 24)
-                updateTiming('ballAndRest', 30)
-                updateTiming('finalProof', 2)
-              }}
-              className="px-3 py-2 bg-yellow-100 text-yellow-800 rounded-xl hover:bg-yellow-200 transition-all text-sm font-medium"
-            >
-              Cold Ferment (24hrs)
-            </button>
-            <button
-              onClick={() => {
-                updateTiming('autolyse', 60)
-                updateTiming('bulkFerment', 48)
-                updateTiming('ballAndRest', 60)
-                updateTiming('finalProof', 3)
-              }}
-              className="px-3 py-2 bg-yellow-100 text-yellow-800 rounded-xl hover:bg-yellow-200 transition-all text-sm font-medium"
-            >
-              Long Cold (48hrs)
-            </button>
-            </div>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Recipe Management */}
       <div>
-      <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 shadow-xl border border-white/20">
-        <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-6 shadow-2xl text-white border border-gray-700/50">
+        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
           <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
           Recipe Management
         </h2>
@@ -835,14 +551,14 @@ export default function DoughCalculator() {
         {/* Save Dialog */}
         {showSaveDialog && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl border border-white/20 transform transition-all">
-              <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">💾 Save Recipe</h3>
+            <div className="bg-gray-800 rounded-3xl p-8 w-full max-w-md shadow-2xl border border-gray-600 transform transition-all">
+              <h3 className="text-2xl font-bold text-white mb-6 text-center">💾 Save Recipe</h3>
               <input
                 type="text"
                 placeholder="Enter recipe name..."
                 value={newRecipeName}
                 onChange={(e) => setNewRecipeName(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-blue-400 focus:bg-blue-50/50 mb-6 text-lg font-medium transition-all"
+                className="w-full px-4 py-3 border-2 border-gray-600 bg-gray-700 text-white rounded-2xl focus:outline-none focus:border-blue-400 focus:bg-gray-600 mb-6 text-lg font-medium transition-all placeholder-gray-400"
                 onKeyDown={(e) => e.key === 'Enter' && saveCurrentRecipe()}
                 autoFocus
               />
@@ -858,7 +574,7 @@ export default function DoughCalculator() {
                     setShowSaveDialog(false)
                     setNewRecipeName('')
                   }}
-                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-2xl hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-gray-100 transition-all font-semibold"
+                  className="flex-1 px-6 py-3 bg-gray-600 text-gray-200 rounded-2xl hover:bg-gray-500 focus:outline-none focus:ring-4 focus:ring-gray-600 transition-all font-semibold"
                 >
                   Cancel
                 </button>
@@ -870,15 +586,15 @@ export default function DoughCalculator() {
         {/* Saved Recipes */}
         {savedRecipes.length > 0 && (
           <div>
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
               Saved Recipes
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {savedRecipes.map((savedRecipe) => (
-                <div key={savedRecipe.id} className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-4 border-2 border-gray-100 hover:border-purple-200 hover:shadow-lg transition-all">
-                  <h4 className="font-bold text-gray-900 mb-2 text-lg">{savedRecipe.name}</h4>
-                  <p className="text-sm text-gray-600 mb-4">
+                <div key={savedRecipe.id} className="bg-gradient-to-br from-gray-700 to-gray-800 rounded-2xl p-4 border-2 border-gray-600 hover:border-purple-400 hover:shadow-lg transition-all">
+                  <h4 className="font-bold text-white mb-2 text-lg">{savedRecipe.name}</h4>
+                  <p className="text-sm text-gray-300 mb-4">
                     {Number(savedRecipe.doughBalls) || 1} balls × {Number(savedRecipe.ballWeight) || 50}g
                   </p>
                   <div className="flex gap-2">
