@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react'
 interface Recipe {
   id: string
   name: string
-  doughBalls: number
-  ballWeight: number
+  doughBalls: number | string
+  ballWeight: number | string
   ingredients: {
     flour: number
     water: number
@@ -119,16 +119,18 @@ export default function DoughCalculator() {
     }))
   }
 
-  const updateDoughBalls = (value: number) => {
-    setRecipe(prev => ({ ...prev, doughBalls: value }))
+  const updateDoughBalls = (value: number | string) => {
+    setRecipe(prev => ({ ...prev, doughBalls: value === '' ? '' : Number(value) }))
   }
 
-  const updateBallWeight = (value: number) => {
-    setRecipe(prev => ({ ...prev, ballWeight: value }))
+  const updateBallWeight = (value: number | string) => {
+    setRecipe(prev => ({ ...prev, ballWeight: value === '' ? '' : Number(value) }))
   }
 
   const calculateWeights = () => {
-    const totalDoughWeight = recipe.doughBalls * recipe.ballWeight
+    const doughBalls = Number(recipe.doughBalls) || 1
+    const ballWeight = Number(recipe.ballWeight) || 50
+    const totalDoughWeight = doughBalls * ballWeight
     const totalFlourWeight = (totalDoughWeight * recipe.ingredients.flour) / 100
     
     let preFermentFlour = 0
@@ -227,11 +229,17 @@ export default function DoughCalculator() {
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-300 text-sm">Flour</span>
-                        <span className="text-white font-bold">{Math.round(weights.preFerment.flour)}g</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-bold">{Math.round(weights.preFerment.flour)}g</span>
+                          <span className="text-gray-400 text-xs">({((weights.preFerment.flour / weights.totalFlourWeight) * 100).toFixed(0)}%)</span>
+                        </div>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-300 text-sm">Water</span>
-                        <span className="text-white font-bold">{Math.round(weights.preFerment.water)}g</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-bold">{Math.round(weights.preFerment.water)}g</span>
+                          <span className="text-gray-400 text-xs">({((weights.preFerment.water / ((weights.totalDoughWeight * recipe.ingredients.water) / 100)) * 100).toFixed(0)}%)</span>
+                        </div>
                       </div>
                       <div className="border-t border-purple-600/30 pt-2">
                         <div className="flex justify-between items-center">
@@ -251,18 +259,27 @@ export default function DoughCalculator() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300 text-sm font-medium">Flour</span>
-                      <span className="text-white text-lg font-bold">{Math.round(weights.finalDough.flour)}g</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white text-lg font-bold">{Math.round(weights.finalDough.flour)}g</span>
+                        <span className="text-gray-400 text-xs">({((weights.finalDough.flour / weights.totalFlourWeight) * 100).toFixed(0)}%)</span>
+                      </div>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300 text-sm font-medium">Water</span>
-                      <span className="text-white text-lg font-bold">{Math.round(weights.finalDough.water)}g</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white text-lg font-bold">{Math.round(weights.finalDough.water)}g</span>
+                        <span className="text-gray-400 text-xs">({((weights.finalDough.water / ((weights.totalDoughWeight * recipe.ingredients.water) / 100)) * 100).toFixed(0)}%)</span>
+                      </div>
                     </div>
                     {Object.entries(weights.finalDough).map(([key, weight]) => {
                       if (key === 'flour' || key === 'water' || weight === 0) return null
                       return (
                         <div key={key} className="flex justify-between items-center">
                           <span className="text-gray-300 text-sm font-medium">{key.charAt(0).toUpperCase() + key.slice(1)}</span>
-                          <span className="text-white text-lg font-bold">{Math.round(weight as number)}g</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white text-lg font-bold">{Math.round(weight as number)}g</span>
+                            <span className="text-gray-400 text-xs">({recipe.ingredients[key as keyof typeof recipe.ingredients]}%)</span>
+                          </div>
                         </div>
                       )
                     })}
@@ -281,7 +298,7 @@ export default function DoughCalculator() {
                     <span className="text-2xl font-black text-green-400">{Math.round(weights.totalDoughWeight)}g</span>
                   </div>
                   <div className="text-xs text-gray-400">
-                    For {recipe.doughBalls} dough balls at {recipe.ballWeight}g each
+                    For {Number(recipe.doughBalls) || 1} dough balls at {Number(recipe.ballWeight) || 50}g each
                   </div>
                 </div>
               </div>
@@ -344,7 +361,7 @@ export default function DoughCalculator() {
                 <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-xs font-bold text-black">{recipe.timing.autolyse > 0 ? '4' : '3'}</div>
                 <div className="flex-1">
                   <div className="font-semibold">Ball & Rest ({recipe.timing.ballAndRest} min)</div>
-                  <div className="text-yellow-200 text-xs">Divide into {recipe.doughBalls} balls. Shape and rest covered.</div>
+                  <div className="text-yellow-200 text-xs">Divide into {Number(recipe.doughBalls) || 1} balls. Shape and rest covered.</div>
                 </div>
               </div>
               
@@ -397,7 +414,7 @@ export default function DoughCalculator() {
             <div className="flex items-center gap-3">
               {collapsed.settings && (
                 <div className="text-sm text-gray-600 font-medium">
-                  {recipe.doughBalls} balls × {recipe.ballWeight}g each
+                  {Number(recipe.doughBalls) || 1} balls × {Number(recipe.ballWeight) || 50}g each
                 </div>
               )}
               <div className={`transform transition-transform duration-200 ${collapsed.settings ? 'rotate-180' : ''}`}>
@@ -418,8 +435,9 @@ export default function DoughCalculator() {
                   type="number"
                   min="1"
                   value={recipe.doughBalls}
-                  onChange={(e) => updateDoughBalls(parseInt(e.target.value) || 1)}
+                  onChange={(e) => updateDoughBalls(e.target.value)}
                   className="w-full px-4 py-3 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-orange-400 focus:bg-orange-50/50 transition-all text-lg font-semibold text-center"
+                  required
                 />
                 <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                   <span className="text-gray-400 text-sm font-medium">balls</span>
@@ -436,8 +454,9 @@ export default function DoughCalculator() {
                   type="number"
                   min="50"
                   value={recipe.ballWeight}
-                  onChange={(e) => updateBallWeight(parseInt(e.target.value) || 50)}
+                  onChange={(e) => updateBallWeight(e.target.value)}
                   className="w-full px-4 py-3 bg-white border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-orange-400 focus:bg-orange-50/50 transition-all text-lg font-semibold text-center"
+                  required
                 />
                 <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                   <span className="text-gray-400 text-sm font-medium">grams</span>
@@ -860,7 +879,7 @@ export default function DoughCalculator() {
                 <div key={savedRecipe.id} className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-4 border-2 border-gray-100 hover:border-purple-200 hover:shadow-lg transition-all">
                   <h4 className="font-bold text-gray-900 mb-2 text-lg">{savedRecipe.name}</h4>
                   <p className="text-sm text-gray-600 mb-4">
-                    {savedRecipe.doughBalls} balls × {savedRecipe.ballWeight}g
+                    {Number(savedRecipe.doughBalls) || 1} balls × {Number(savedRecipe.ballWeight) || 50}g
                   </p>
                   <div className="flex gap-2">
                     <button
