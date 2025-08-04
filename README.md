@@ -82,3 +82,5 @@ MIT License - feel free to use for any purpose.
 ## 🤖 Development
 
 Built with assistance from [Claude Code](https://claude.ai/code)
+
+*Last updated: 2025-08-04*
