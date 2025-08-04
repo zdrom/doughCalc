@@ -24,7 +24,7 @@ A professional-grade pizza dough calculator built as a Progressive Web App (PWA)
 
 ## 🚀 Live Demo
 
-Visit the live app: [Pizza Dough Calculator](https://zachromano.github.io/doughCalc/)
+Visit the live app: [Pizza Dough Calculator](https://zdrom.github.io/doughCalc/)
 
 ## 🛠️ Development
 
@@ -34,7 +34,7 @@ Visit the live app: [Pizza Dough Calculator](https://zachromano.github.io/doughC
 
 ### Setup
 ```bash
-git clone https://github.com/zachromano/doughCalc.git
+git clone https://github.com/zdrom/doughCalc.git
 cd doughCalc
 npm install
 npm run dev
