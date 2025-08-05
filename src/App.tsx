@@ -3,6 +3,8 @@ import DoughSettings from './components/DoughSettings'
 import DoughResults from './components/DoughResults'
 
 interface Recipe {
+  id?: string
+  name?: string
   ingredients: {
     flour: number
     water: number

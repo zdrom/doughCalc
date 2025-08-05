@@ -1,4 +1,6 @@
 interface Recipe {
+  id?: string
+  name?: string
   ingredients: {
     flour: number
     water: number
@@ -21,7 +23,7 @@ interface DoughSettingsProps {
   onCalculate: () => void
 }
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // Touch-friendly stepper component with click-to-edit
 const TouchStepper = ({ value, onChange, min = 0, max = 100, step = 0.1, unit = '%', disabled = false }: {
@@ -116,9 +118,6 @@ const TouchStepper = ({ value, onChange, min = 0, max = 100, step = 0.1, unit = 
             }`}
           >
             {value.toFixed(1)}{unit}
-            {!disabled && (
-              <div className="text-xs text-gray-400 mt-1">tap to edit</div>
-            )}
           </button>
         )}
       </div>
@@ -201,7 +200,6 @@ const TouchSlider = ({ value, onChange, min = 0, max = 100, step = 1, unit = '%'
             className="text-white font-bold text-lg hover:text-purple-300 transition-all px-3 py-1 rounded-lg hover:bg-gray-700"
           >
             {value}{unit}
-            <div className="text-xs text-gray-400">tap to edit</div>
           </button>
         )}
       </div>
@@ -224,6 +222,23 @@ const TouchSlider = ({ value, onChange, min = 0, max = 100, step = 1, unit = '%'
 }
 
 export default function DoughSettings({ recipe, onRecipeChange, onCalculate }: DoughSettingsProps) {
+  const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([])
+  const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [newRecipeName, setNewRecipeName] = useState('')
+
+  // Load saved recipes on component mount
+  useEffect(() => {
+    const saved = localStorage.getItem('pizza-dough-recipes')
+    if (saved) {
+      setSavedRecipes(JSON.parse(saved))
+    }
+  }, [])
+
+  const saveRecipes = (recipes: Recipe[]) => {
+    localStorage.setItem('pizza-dough-recipes', JSON.stringify(recipes))
+    setSavedRecipes(recipes)
+  }
+
   const updateIngredient = (ingredient: keyof Recipe['ingredients'], value: number) => {
     onRecipeChange({
       ...recipe,
@@ -240,6 +255,49 @@ export default function DoughSettings({ recipe, onRecipeChange, onCalculate }: D
       preFerment: {
         ...recipe.preFerment,
         [field]: value
+      }
+    })
+  }
+
+  const saveCurrentRecipe = () => {
+    if (!newRecipeName.trim()) return
+    
+    const newRecipe: Recipe = {
+      ...recipe,
+      id: Date.now().toString(),
+      name: newRecipeName.trim()
+    }
+    
+    const updatedRecipes = [...savedRecipes, newRecipe]
+    saveRecipes(updatedRecipes)
+    setNewRecipeName('')
+    setShowSaveDialog(false)
+  }
+
+  const loadRecipe = (loadedRecipe: Recipe) => {
+    onRecipeChange(loadedRecipe)
+  }
+
+  const deleteRecipe = (id: string) => {
+    const updatedRecipes = savedRecipes.filter(r => r.id !== id)
+    saveRecipes(updatedRecipes)
+  }
+
+  const resetToDefault = () => {
+    onRecipeChange({
+      ingredients: {
+        flour: 100,
+        water: 60,
+        salt: 2.5,
+        yeast: 0.3,
+        oil: 0,
+        sugar: 0,
+      },
+      preFerment: {
+        enabled: false,
+        type: 'poolish',
+        percentage: 20,
+        hydration: 100,
       }
     })
   }
@@ -384,6 +442,103 @@ export default function DoughSettings({ recipe, onRecipeChange, onCalculate }: D
         >
           🧮 Calculate Dough
         </button>
+      </div>
+
+      {/* Recipe Management */}
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 shadow-2xl text-white border border-gray-700/50">
+        <h2 className="text-2xl font-bold text-white mb-8 flex items-center gap-3">
+          <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
+          Recipe Management
+        </h2>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+          <button
+            onClick={() => setShowSaveDialog(true)}
+            className="py-6 px-8 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl focus:outline-none transition-all font-bold text-xl shadow-2xl active:scale-95 active:shadow-lg"
+            style={{ minHeight: '72px' }}
+          >
+            💾 Save Recipe
+          </button>
+          
+          <button
+            onClick={resetToDefault}
+            className="py-6 px-8 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-2xl focus:outline-none transition-all font-bold text-xl shadow-2xl active:scale-95 active:shadow-lg"
+            style={{ minHeight: '72px' }}
+          >
+            🔄 Reset to Default
+          </button>
+        </div>
+
+        {/* Save Dialog */}
+        {showSaveDialog && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-gray-800 rounded-3xl p-8 w-full max-w-md shadow-2xl border border-gray-600">
+              <h3 className="text-2xl font-bold text-white mb-6 text-center">💾 Save Recipe</h3>
+              <input
+                type="text"
+                placeholder="Enter recipe name..."
+                value={newRecipeName}
+                onChange={(e) => setNewRecipeName(e.target.value)}
+                className="w-full px-6 py-4 border-2 border-gray-600 bg-gray-700 text-white rounded-2xl focus:outline-none focus:border-blue-400 focus:bg-gray-600 mb-6 text-xl font-medium transition-all placeholder-gray-400"
+                onKeyDown={(e) => e.key === 'Enter' && saveCurrentRecipe()}
+                autoFocus
+                style={{ fontSize: '18px' }}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={saveCurrentRecipe}
+                  className="py-4 px-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl focus:outline-none transition-all font-bold text-lg shadow-lg active:scale-95"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSaveDialog(false)
+                    setNewRecipeName('')
+                  }}
+                  className="py-4 px-6 bg-gray-600 text-gray-200 rounded-2xl focus:outline-none transition-all font-bold text-lg active:scale-95"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Saved Recipes */}
+        {savedRecipes.length > 0 && (
+          <div>
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+              <div className="w-3 h-3 bg-purple-400 rounded-full"></div>
+              Saved Recipes
+            </h3>
+            <div className="grid grid-cols-1 gap-4">
+              {savedRecipes.map((savedRecipe) => (
+                <div key={savedRecipe.id} className="bg-gradient-to-br from-gray-700 to-gray-800 rounded-2xl p-6 border-2 border-gray-600 hover:border-purple-400 hover:shadow-lg transition-all">
+                  <h4 className="font-bold text-white mb-2 text-xl">{savedRecipe.name}</h4>
+                  <p className="text-gray-300 mb-4 text-lg">
+                    {savedRecipe.ingredients.water}% water, {savedRecipe.ingredients.salt}% salt, {savedRecipe.ingredients.yeast}% yeast
+                    {savedRecipe.preFerment.enabled && ` • ${savedRecipe.preFerment.type}`}
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => loadRecipe(savedRecipe)}
+                      className="py-4 px-6 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold text-lg rounded-xl transition-all shadow-md active:scale-95"
+                    >
+                      📥 Load
+                    </button>
+                    <button
+                      onClick={() => deleteRecipe(savedRecipe.id!)}
+                      className="py-4 px-6 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-lg rounded-xl transition-all shadow-md active:scale-95"
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

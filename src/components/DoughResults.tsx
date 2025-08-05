@@ -110,7 +110,6 @@ const ResultStepper = ({ value, onChange, min = 1, max = 20, step = 1, unit = ''
               className="text-2xl font-black text-white hover:text-orange-300 transition-all cursor-pointer"
             >
               {value}{unit}
-              <div className="text-xs text-gray-400 mt-1">tap to edit</div>
             </button>
           )}
         </div>
@@ -136,37 +135,69 @@ export default function DoughResults({ recipe, onBack }: DoughResultsProps) {
   const [ballWeight, setBallWeight] = useState<number>(250)
 
   const calculateWeights = () => {
-    const totalDoughWeight = doughBalls * ballWeight
-    const totalFlourWeight = (totalDoughWeight * recipe.ingredients.flour) / 100
+    const targetTotalWeight = doughBalls * ballWeight
+    
+    // Calculate the total percentage of all ingredients
+    const totalPercentage = recipe.ingredients.flour + 
+                           recipe.ingredients.water + 
+                           recipe.ingredients.salt + 
+                           recipe.ingredients.yeast + 
+                           recipe.ingredients.oil + 
+                           recipe.ingredients.sugar
+    
+    // Calculate flour weight based on target total weight
+    const totalFlourWeight = (targetTotalWeight * recipe.ingredients.flour) / totalPercentage
+    
+    // Calculate all ingredient weights based on flour weight
+    const totalWaterWeight = (totalFlourWeight * recipe.ingredients.water) / recipe.ingredients.flour
+    const totalSaltWeight = (totalFlourWeight * recipe.ingredients.salt) / recipe.ingredients.flour
+    const totalYeastWeight = (totalFlourWeight * recipe.ingredients.yeast) / recipe.ingredients.flour
+    const totalOilWeight = (totalFlourWeight * recipe.ingredients.oil) / recipe.ingredients.flour
+    const totalSugarWeight = (totalFlourWeight * recipe.ingredients.sugar) / recipe.ingredients.flour
+    
+    // Calculate actual total weight (might be slightly different due to rounding)
+    const actualTotalWeight = totalFlourWeight + totalWaterWeight + totalSaltWeight + totalYeastWeight + totalOilWeight + totalSugarWeight
     
     let preFermentFlour = 0
     let preFermentWater = 0
+    let preFermentYeast = 0
     let finalFlour = totalFlourWeight
-    let finalWater = (totalDoughWeight * recipe.ingredients.water) / 100
+    let finalWater = totalWaterWeight
 
     if (recipe.preFerment.enabled) {
-      const preFermentWeight = (totalDoughWeight * recipe.preFerment.percentage) / 100
-      preFermentFlour = preFermentWeight / (1 + recipe.preFerment.hydration / 100)
+      // Calculate pre-ferment flour based on percentage of total flour
+      preFermentFlour = (totalFlourWeight * recipe.preFerment.percentage) / 100
       preFermentWater = preFermentFlour * (recipe.preFerment.hydration / 100)
       
+      // All yeast goes in the pre-ferment
+      preFermentYeast = totalYeastWeight
+      
+      // Remaining flour and water for final dough
       finalFlour = totalFlourWeight - preFermentFlour
-      finalWater = ((totalDoughWeight * recipe.ingredients.water) / 100) - preFermentWater
+      finalWater = totalWaterWeight - preFermentWater
     }
 
+    // Other ingredients for final dough (yeast only if no pre-ferment)
     const otherIngredients = {
-      salt: (totalFlourWeight * recipe.ingredients.salt) / 100,
-      yeast: (totalFlourWeight * recipe.ingredients.yeast) / 100,
-      oil: (totalFlourWeight * recipe.ingredients.oil) / 100,
-      sugar: (totalFlourWeight * recipe.ingredients.sugar) / 100,
+      salt: totalSaltWeight,
+      yeast: recipe.preFerment.enabled ? 0 : totalYeastWeight,
+      oil: totalOilWeight,
+      sugar: totalSugarWeight,
     }
+
+    // Calculate hydration percentage
+    const totalHydrationPercent = (totalWaterWeight / totalFlourWeight) * 100
 
     return {
-      totalDoughWeight,
+      totalDoughWeight: actualTotalWeight,
       totalFlourWeight,
+      totalWaterWeight,
+      totalHydrationPercent,
       preFerment: {
         flour: preFermentFlour,
         water: preFermentWater,
-        total: preFermentFlour + preFermentWater
+        yeast: preFermentYeast,
+        total: preFermentFlour + preFermentWater + preFermentYeast
       },
       finalDough: {
         flour: finalFlour,
@@ -218,6 +249,28 @@ export default function DoughResults({ recipe, onBack }: DoughResultsProps) {
         </h2>
         
         <div className="space-y-8">
+          {/* Overall Dough Summary */}
+          <div className="bg-blue-900/50 rounded-2xl p-6 border border-blue-600/30 mb-6">
+            <h3 className="text-lg font-bold text-blue-300 mb-4 uppercase tracking-wide">
+              Total Dough Composition
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <div className="text-3xl font-black text-white">{Math.round(weights.totalFlourWeight)}g</div>
+                <div className="text-blue-300 font-medium">Total Flour</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-black text-white">{Math.round(weights.totalWaterWeight)}g</div>
+                <div className="text-blue-300 font-medium">Total Water</div>
+              </div>
+            </div>
+            <div className="text-center mt-4 pt-4 border-t border-blue-600/30">
+              <div className="text-2xl font-bold text-blue-200">
+                {weights.totalHydrationPercent.toFixed(1)}% Hydration
+              </div>
+            </div>
+          </div>
+
           {/* Pre-ferment Section */}
           {recipe.preFerment.enabled && weights.preFerment.total > 0 && (
             <div className="bg-purple-900/50 rounded-2xl p-6 border border-purple-600/30">
@@ -227,21 +280,19 @@ export default function DoughResults({ recipe, onBack }: DoughResultsProps) {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300 text-lg">Flour</span>
-                  <div className="flex items-center gap-3">
-                    <span className="text-white font-bold text-xl">{Math.round(weights.preFerment.flour)}g</span>
-                    <span className="text-gray-400 text-sm">({((weights.preFerment.flour / weights.totalFlourWeight) * 100).toFixed(0)}%)</span>
-                  </div>
+                  <span className="text-white font-bold text-xl">{Math.round(weights.preFerment.flour)}g</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300 text-lg">Water</span>
-                  <div className="flex items-center gap-3">
-                    <span className="text-white font-bold text-xl">{Math.round(weights.preFerment.water)}g</span>
-                    <span className="text-gray-400 text-sm">({((weights.preFerment.water / weights.totalFlourWeight) * 100).toFixed(1)}%)</span>
-                  </div>
+                  <span className="text-white font-bold text-xl">{Math.round(weights.preFerment.water)}g</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300 text-lg">Yeast</span>
+                  <span className="text-white font-bold text-xl">{Math.round(weights.preFerment.yeast)}g</span>
                 </div>
                 <div className="border-t border-purple-600/30 pt-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-purple-300 font-bold text-lg">Total</span>
+                    <span className="text-purple-300 font-bold text-lg">Total {recipe.preFerment.type}</span>
                     <span className="text-purple-300 font-bold text-xl">{Math.round(weights.preFerment.total)}g</span>
                   </div>
                 </div>
@@ -249,42 +300,37 @@ export default function DoughResults({ recipe, onBack }: DoughResultsProps) {
             </div>
           )}
 
-          {/* Final Dough Section */}
+          {/* Final Dough Mix Section */}
           <div>
             <h3 className="text-lg font-bold text-green-300 mb-4 uppercase tracking-wide">
               Final Dough Mix
             </h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-gray-300 text-lg font-medium">Flour</span>
-                <div className="flex items-center gap-3">
-                  <span className="text-white text-2xl font-bold">{Math.round(weights.finalDough.flour)}g</span>
-                  <span className="text-gray-400 text-sm">({((weights.finalDough.flour / weights.totalFlourWeight) * 100).toFixed(0)}%)</span>
-                </div>
+                <span className="text-gray-300 text-lg font-medium">
+                  {recipe.preFerment.enabled ? 'Remaining Flour' : 'Flour'}
+                </span>
+                <span className="text-white text-2xl font-bold">{Math.round(weights.finalDough.flour)}g</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-300 text-lg font-medium">Water</span>
-                <div className="flex items-center gap-3">
-                  <span className="text-white text-2xl font-bold">{Math.round(weights.finalDough.water)}g</span>
-                  <span className="text-gray-400 text-sm">({((weights.finalDough.water / weights.totalFlourWeight) * 100).toFixed(1)}%)</span>
-                </div>
+                <span className="text-gray-300 text-lg font-medium">
+                  {recipe.preFerment.enabled ? 'Remaining Water' : 'Water'}
+                </span>
+                <span className="text-white text-2xl font-bold">{Math.round(weights.finalDough.water)}g</span>
               </div>
               {Object.entries(weights.finalDough).map(([key, weight]) => {
                 if (key === 'flour' || key === 'water' || weight === 0) return null
                 return (
                   <div key={key} className="flex justify-between items-center">
                     <span className="text-gray-300 text-lg font-medium">{key.charAt(0).toUpperCase() + key.slice(1)}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-white text-2xl font-bold">{Math.round(weight as number)}g</span>
-                      <span className="text-gray-400 text-sm">({recipe.ingredients[key as keyof typeof recipe.ingredients]}%)</span>
-                    </div>
+                    <span className="text-white text-2xl font-bold">{Math.round(weight as number)}g</span>
                   </div>
                 )
               })}
               {recipe.preFerment.enabled && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-300 text-lg font-medium">{recipe.preFerment.type.charAt(0).toUpperCase() + recipe.preFerment.type.slice(1)}</span>
-                  <span className="text-white text-2xl font-bold">{Math.round(weights.preFerment.total)}g</span>
+                <div className="flex justify-between items-center border-t border-gray-600 pt-4">
+                  <span className="text-gray-300 text-lg font-medium">Add {recipe.preFerment.type.charAt(0).toUpperCase() + recipe.preFerment.type.slice(1)}</span>
+                  <span className="text-purple-300 text-2xl font-bold">{Math.round(weights.preFerment.total)}g</span>
                 </div>
               )}
             </div>
